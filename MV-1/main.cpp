@@ -94,12 +94,12 @@ double calculateDistanceFromPoint2d(cv::Point2d ptA, cv::Point2d ptB) {
 int main() {
 
     double width = 6, height = 3;
-
+    double ref_object_px_per_cm = 0;
 
     try
     {
         string input;
-        cout << "Enter width & height of reference object(credit card) in cm (width,height) eg:- 4,5 : ";
+        cout << "Enter width & height of reference object(credit card) in cm for calibration (width,height) eg:- 4,5 : ";
         getline(cin, input);
 
         stringstream ss(input);
@@ -126,11 +126,12 @@ int main() {
 
     HomogeneousBgDetector detector;
 
-    cv::namedWindow("Camera", cv::WINDOW_NORMAL);
-    cv::resizeWindow("Camera", 640, 480);
-    cv::setMouseCallback("Camera", onMouse, 0);
+    cv::namedWindow("Calibration", cv::WINDOW_NORMAL);
+    cv::resizeWindow("Calibration", 640, 480);
+
 
     cv::Mat frame;
+
     while (true) {
         cap.read(frame);
         if (frame.empty()) {
@@ -138,9 +139,10 @@ int main() {
             break;
         }
 
+        ref_object_px_per_cm = 0;
+
         std::vector<std::vector<cv::Point>> contours = detector.detect_objects(frame);
 
-        double ref_object_px_per_cm = 0;
 
         for (int i = 0; i < contours.size(); i++) {
             if (ref_object_px_per_cm != 0)
@@ -180,29 +182,51 @@ int main() {
             cv::putText(frame, "Reference Object pixels/cm length " + std::to_string(ref_object_px_per_cm), cv::Point(10, 30), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255, 0, 0), 2);
         }
 
+
+
+        cv::imshow("Calibration", frame);
+        if (cv::waitKey(1) == 'q') {
+            break;
+        }
+    }
+
+
+    cv::namedWindow("Detection", cv::WINDOW_NORMAL);
+    cv::resizeWindow("Detection", 640, 480);
+    cv::setMouseCallback("Detection", onMouse, 0);
+    cv::Mat frame2;
+    while (true) {
+        cap.read(frame2);
+        if (frame2.empty()) {
+            std::cerr << "Unable to capture frame\n";
+            break;
+        }
+
         if (clicked) {
-            cv::circle(frame, point1, 3, cv::Scalar(0, 255, 0), -1);
-            cv::putText(frame, "Point 1", point1, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+            cv::circle(frame2, point1, 3, cv::Scalar(0, 255, 0), -1);
+            cv::putText(frame2, "Point 1", point1, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
         }
 
         if (point1 != cv::Point2f(-1, -1) && point2 != cv::Point2f(-1, -1)) {
-            cv::line(frame, point1, point2, cv::Scalar(255, 0, 0), 2);
-            cv::putText(frame, "Point 2", point2, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 2);
+            cv::line(frame2, point1, point2, cv::Scalar(255, 0, 0), 2);
+            cv::putText(frame2, "Point 2", point2, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 2);
 
             if (ref_object_px_per_cm != 0) {
                 float dist = calculateDistanceFromPoint2d(point1, point2) / ref_object_px_per_cm;
                 std::ostringstream dist_str;
                 dist_str << "Distance (cm): " << dist;
-                cv::putText(frame, dist_str.str(), cv::Point(450, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
+                cv::putText(frame2, dist_str.str(), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
             }
 
         }
 
-        cv::imshow("Camera", frame);
+        cv::imshow("Detection", frame2);
         if (cv::waitKey(1) == 'q') {
             break;
         }
     }
+
+
 
     cap.release();
     cv::destroyAllWindows();
