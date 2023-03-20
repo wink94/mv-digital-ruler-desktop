@@ -99,7 +99,7 @@ int main() {
     try
     {
         string input;
-        cout << "Enter width & height of reference object in cm (width,height) eg:- 4,5 : ";
+        cout << "Enter width & height of reference object(credit card) in cm (width,height) eg:- 4,5 : ";
         getline(cin, input);
 
         stringstream ss(input);
